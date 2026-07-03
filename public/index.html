@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Koma // Terminal de Comandas POS</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo-area">
+                <span class="logo-icon">🖨️</span>
+                <div class="logo-text">
+                    <h1>KOMA</h1>
+                    <p>Terminal de Comandas POS</p>
+                </div>
+            </div>
+            
+            <div class="hardware-status">
+                <div class="status-indicator" id="status-kitchen">
+                    <span class="status-dot"></span>
+                    <span class="status-label">Cocina (lp0)</span>
+                </div>
+                <div class="status-indicator" id="status-bar">
+                    <span class="status-dot"></span>
+                    <span class="status-label">Barra (lp1)</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <!-- LEFT PANEL: MENU -->
+            <section class="panel panel-menu">
+                <div class="panel-header">
+                    <h2>Carta de Productos</h2>
+                    <div class="category-tabs">
+                        <button class="tab-btn active" data-category="all">Todos</button>
+                        <button class="tab-btn" data-category="food">🍔 Comida</button>
+                        <button class="tab-btn" data-category="drink">🍹 Bebidas</button>
+                        <button class="tab-btn" data-category="dessert">🍰 Postres</button>
+                    </div>
+                </div>
+                <div class="custom-item-section">
+                    <h3>➕ Agregar Item Manual</h3>
+                    <div class="custom-item-inputs">
+                        <input type="text" id="custom-name" placeholder="Nombre (ej: Filete de Res)">
+                        <input type="number" id="custom-price" placeholder="Precio ($)" step="0.01" min="0">
+                        <select id="custom-category">
+                            <option value="food">🍔 Comida</option>
+                            <option value="drink">🍹 Bebida</option>
+                            <option value="dessert">🍰 Postre</option>
+                        </select>
+                        <button class="btn-add-custom" id="btn-add-custom">Agregar</button>
+                    </div>
+                </div>
+                <div class="menu-grid" id="menu-grid">
+                    <!-- Dinámicamente llenado por JS -->
+                </div>
+            </section>
+
+            <!-- MIDDLE PANEL: ACTIVE TICKET -->
+            <section class="panel panel-ticket">
+                <div class="panel-header">
+                    <h2>Comanda Activa</h2>
+                    <span class="order-id" id="display-order-id">Orden #--</span>
+                </div>
+
+                <div class="ticket-meta-grid">
+                    <div class="form-group">
+                        <label for="order-table">Mesa</label>
+                        <select id="order-table">
+                            <option value="Mesa 1">Mesa 1</option>
+                            <option value="Mesa 2">Mesa 2</option>
+                            <option value="Mesa 3">Mesa 3</option>
+                            <option value="Mesa 4">Mesa 4</option>
+                            <option value="Mesa 5">Mesa 5</option>
+                            <option value="Mesa Barra">Barra</option>
+                            <option value="Para Llevar">Llevar</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="order-diners">Personas</label>
+                        <input type="number" id="order-diners" value="1" min="1" max="20">
+                    </div>
+                </div>
+
+                <div class="ticket-items" id="ticket-items">
+                    <div class="empty-ticket-message">
+                        <span>📝</span>
+                        <p>Agrega productos del menú para comenzar la comanda.</p>
+                    </div>
+                </div>
+
+                <div class="ticket-notes">
+                    <label for="order-notes">Notas Generales de la Comanda</label>
+                    <textarea id="order-notes" placeholder="Ej: Sin sal, salsas aparte, servir bebidas primero..."></textarea>
+                </div>
+
+                <div class="ticket-footer">
+                    <div class="print-destination">
+                        <span class="dest-title">Impresora Destino</span>
+                        <div class="destination-options">
+                            <label class="dest-radio">
+                                <input type="radio" name="print-target" value="auto" checked>
+                                <span class="radio-card">
+                                    <span class="icon">🔀</span>
+                                    <span class="label">Auto-Split</span>
+                                    <span class="subtext">Comida a Cocina, Bebidas a Barra</span>
+                                </span>
+                            </label>
+                            
+                            <label class="dest-radio">
+                                <input type="radio" name="print-target" value="cocina">
+                                <span class="radio-card">
+                                    <span class="icon">🍳</span>
+                                    <span class="label">Cocina</span>
+                                    <span class="subtext">Todo a lp0</span>
+                                </span>
+                            </label>
+                            
+                            <label class="dest-radio">
+                                <input type="radio" name="print-target" value="barra">
+                                <span class="radio-card">
+                                    <span class="icon">🍸</span>
+                                    <span class="label">Barra</span>
+                                    <span class="subtext">Todo a lp1</span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="ticket-actions">
+                        <button class="btn btn-clear" id="btn-clear">Limpiar</button>
+                        <button class="btn btn-print" id="btn-print">
+                            <span class="btn-icon">🖨️</span>
+                            <span class="btn-text">Imprimir Comanda</span>
+                        </button>
+                    </div>
+                    
+                    <button class="btn-browser-print" id="btn-browser-print">
+                        📄 Previsualizar / Imprimir en Navegador
+                    </button>
+                </div>
+            </section>
+
+            <!-- RIGHT PANEL: HISTORY & UTILITIES -->
+            <section class="panel panel-history">
+                <div class="panel-header">
+                    <h2>Historial & Utilidades</h2>
+                </div>
+                
+                <div class="history-list" id="history-list">
+                    <div class="empty-history-message">
+                        <p>No se han enviado comandas en esta sesión.</p>
+                    </div>
+                </div>
+
+                <div class="utilities-card">
+                    <h3>Acciones Rápidas</h3>
+                    <div class="util-buttons">
+                        <button class="btn btn-secondary" id="btn-test-kitchen">Test Cocina (lp0)</button>
+                        <button class="btn btn-secondary" id="btn-test-bar">Test Barra (lp1)</button>
+                    </div>
+                    <p class="util-note">Envía un ticket corto de prueba para comprobar que los rodillos y el cortador funcionan.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modales o Notificaciones -->
+    <div id="toast-container"></div>
+
+    <!-- TICKET DE IMPRESIÓN DEL NAVEGADOR (Invisible en pantalla normal, visible al imprimir en navegador) -->
+    <div id="browser-print-ticket" class="print-only">
+        <!-- Generado dinámicamente -->
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
