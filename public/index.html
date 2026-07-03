@@ -4,181 +4,596 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Koma // Terminal de Comandas POS</title>
+    <!-- Google Fonts: Outfit & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js from CDN for financial charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- jsPDF for PDF report generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        if (window.jspdf) {
+            window.jsPDF = window.jspdf.jsPDF;
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="app-container">
-        <!-- Header -->
-        <header class="app-header">
-            <div class="logo-area">
-                <span class="logo-icon">🖨️</span>
-                <div class="logo-text">
-                    <h1>KOMA</h1>
-                    <p>Terminal de Comandas POS</p>
+        <!-- Sidebar Navigation -->
+        <aside class="app-sidebar">
+            <div class="brand">
+                <span class="brand-icon">⚡</span>
+                <div class="brand-text">
+                    <h2>INSERTAR NOMBRE</h2>
+                    <span class="brand-sub">SISTEMA POS</span>
                 </div>
             </div>
             
-            <div class="hardware-status">
-                <div class="status-indicator" id="status-kitchen">
-                    <span class="status-dot"></span>
-                    <span class="status-label">Cocina (lp0)</span>
-                </div>
-                <div class="status-indicator" id="status-bar">
-                    <span class="status-dot"></span>
-                    <span class="status-label">Barra (lp1)</span>
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-tab="pos">
+                    <span class="nav-icon">📝</span>
+                    <span class="nav-text">Nueva Comanda</span>
+                </button>
+                <button class="nav-item" data-tab="board">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-text">Tablero</span>
+                    <span class="nav-badge" id="badge-active-orders">0</span>
+                </button>
+                <button class="nav-item" data-tab="caja">
+                    <span class="nav-icon">💼</span>
+                    <span class="nav-text">Caja y Finanzas</span>
+                </button>
+                <button class="nav-item" data-tab="menu">
+                    <span class="nav-icon">🍔</span>
+                    <span class="nav-text">Carta / Menú</span>
+                </button>
+                <button class="nav-item" data-tab="config">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">Configuración</span>
+                </button>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="connection-status">
+                    <span class="pulse-dot"></span>
+                    <span>POS Server Activo</span>
                 </div>
             </div>
-        </header>
+        </aside>
 
-        <!-- Main Content -->
-        <main class="app-main">
-            <!-- LEFT PANEL: MENU -->
-            <section class="panel panel-menu">
-                <div class="panel-header">
-                    <h2>Carta de Productos</h2>
-                    <div class="category-tabs">
-                        <button class="tab-btn active" data-category="all">Todos</button>
-                        <button class="tab-btn" data-category="food">🍔 Comida</button>
-                        <button class="tab-btn" data-category="drink">🍹 Bebidas</button>
-                        <button class="tab-btn" data-category="dessert">🍰 Postres</button>
+        <!-- Main Body -->
+        <div class="app-content-wrapper">
+            <!-- Top Header -->
+            <header class="app-header">
+                <div class="header-title">
+                    <h1 id="current-view-title">Nueva Comanda</h1>
+                    <p id="current-view-desc">Crea y envía pedidos directamente a cocina o barra.</p>
+                </div>
+                
+                <div class="hardware-status">
+                    <div class="status-indicator" id="status-kitchen">
+                        <span class="status-dot"></span>
+                        <span class="status-label">Cocina (lp0)</span>
+                    </div>
+                    <div class="status-indicator" id="status-bar">
+                        <span class="status-dot"></span>
+                        <span class="status-label">Barra (lp1)</span>
                     </div>
                 </div>
-                <div class="custom-item-section">
-                    <h3>➕ Agregar Item Manual</h3>
-                    <div class="custom-item-inputs">
-                        <input type="text" id="custom-name" placeholder="Nombre (ej: Filete de Res)">
-                        <input type="number" id="custom-price" placeholder="Precio ($)" step="0.01" min="0">
-                        <select id="custom-category">
+            </header>
+
+            <!-- Main App Views -->
+            <main class="app-main">
+                
+                <!-- VIEW 1: POS / TAKE ORDER -->
+                <section id="view-pos" class="app-view active-view">
+                    <div class="pos-layout">
+                        <!-- Left Panel: Menu Catalog -->
+                        <div class="panel catalog-panel">
+                            <div class="panel-header-pos">
+                                <div class="search-bar-container">
+                                    <span class="search-icon">🔍</span>
+                                    <input type="text" id="search-product" placeholder="Buscar producto en la carta...">
+                                </div>
+                                <div class="category-tabs">
+                                    <button class="tab-btn active" data-category="all">Todos</button>
+                                    <button class="tab-btn" data-category="food">🍔 Comida</button>
+                                    <button class="tab-btn" data-category="drink">🍹 Bebidas</button>
+                                    <button class="tab-btn" data-category="dessert">🍰 Postres</button>
+                                </div>
+                            </div>
+                            
+                            <div class="menu-grid" id="menu-grid">
+                                <!-- Llenado por JS -->
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Active Ticket -->
+                        <div class="panel ticket-panel">
+                            <div class="ticket-header">
+                                <h2>Comanda Activa</h2>
+                                <span class="order-id" id="display-order-id">Orden #--</span>
+                            </div>
+
+                            <div class="ticket-meta-grid">
+                                <div class="form-group">
+                                    <label for="order-table">Mesa</label>
+                                    <select id="order-table">
+                                        <option value="Mesa 1">Mesa 1</option>
+                                        <option value="Mesa 2">Mesa 2</option>
+                                        <option value="Mesa 3">Mesa 3</option>
+                                        <option value="Mesa 4">Mesa 4</option>
+                                        <option value="Mesa 5">Mesa 5</option>
+                                        <option value="Mesa 6">Mesa 6</option>
+                                        <option value="Barra 1">Barra 1</option>
+                                        <option value="Barra 2">Barra 2</option>
+                                        <option value="Para Llevar">Llevar / Delivery</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="order-diners">Personas</label>
+                                    <input type="number" id="order-diners" value="1" min="1" max="20">
+                                </div>
+                            </div>
+
+                            <div class="ticket-items" id="ticket-items">
+                                <!-- Elementos del ticket actual -->
+                                <div class="empty-ticket-message">
+                                    <span>📝</span>
+                                    <p>Agrega productos del menú para comenzar la comanda.</p>
+                                </div>
+                            </div>
+
+                            <div class="ticket-notes">
+                                <label for="order-notes">Notas Generales de la Comanda</label>
+                                <textarea id="order-notes" placeholder="Ej: Sin sal, servir bebidas primero, salsas aparte..."></textarea>
+                            </div>
+
+                            <div class="ticket-footer">
+                                <div class="print-destination">
+                                    <span class="dest-title">Impresora Destino</span>
+                                    <div class="destination-options">
+                                        <label class="dest-radio">
+                                            <input type="radio" name="print-target" value="auto" checked>
+                                            <span class="radio-card">
+                                                <span class="icon">🔀</span>
+                                                <span class="label">Auto-Split</span>
+                                                <span class="subtext">Comida a Cocina, Bebidas a Barra</span>
+                                            </span>
+                                        </label>
+                                        
+                                        <label class="dest-radio">
+                                            <input type="radio" name="print-target" value="cocina">
+                                            <span class="radio-card">
+                                                <span class="icon">🍳</span>
+                                                <span class="label">Cocina</span>
+                                                <span class="subtext">Todo a lp0</span>
+                                            </span>
+                                        </label>
+                                        
+                                        <label class="dest-radio">
+                                            <input type="radio" name="print-target" value="barra">
+                                            <span class="radio-card">
+                                                <span class="icon">🍸</span>
+                                                <span class="label">Barra</span>
+                                                <span class="subtext">Todo a lp1</span>
+                                            </span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="ticket-totals">
+                                    <div class="total-row">
+                                        <span>Subtotal</span>
+                                        <span id="ticket-subtotal">$0.00</span>
+                                    </div>
+                                    <div class="total-row grand-total">
+                                        <span>Total</span>
+                                        <span id="ticket-total">$0.00</span>
+                                    </div>
+                                </div>
+
+                                <div class="ticket-actions">
+                                    <button class="btn btn-clear" id="btn-clear">Limpiar</button>
+                                    <button class="btn btn-print" id="btn-print">
+                                        <span class="btn-icon">🖨️</span>
+                                        <span class="btn-text">Imprimir y Guardar</span>
+                                    </button>
+                                </div>
+                                
+                                <button class="btn-browser-print" id="btn-browser-print">
+                                    📄 Previsualizar Ticket (Navegador)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- VIEW 2: ORDERS BOARD -->
+                <section id="view-board" class="app-view">
+                    <div class="board-container">
+                        <!-- Column 1: Pending Orders -->
+                        <div class="board-column pending-col">
+                            <div class="column-header">
+                                <span class="status-pill status-pending">🍳</span>
+                                <h2>En Cocina / Barra (Pendientes)</h2>
+                                <span class="col-count" id="count-pending">0</span>
+                            </div>
+                            <div class="orders-list-board" id="board-pending-list">
+                                <!-- Cargado dinámicamente -->
+                            </div>
+                        </div>
+
+                        <!-- Column 2: Served Orders -->
+                        <div class="board-column served-col">
+                            <div class="column-header">
+                                <span class="status-pill status-served">🍽️</span>
+                                <h2>Entregado en Mesa (Servidas)</h2>
+                                <span class="col-count" id="count-served">0</span>
+                            </div>
+                            <div class="orders-list-board" id="board-served-list">
+                                <!-- Cargado dinámicamente -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- VIEW 3: LEDGER / CASH FLOW (ENHANCED) -->
+                <section id="view-caja" class="app-view">
+                    <div class="caja-layout">
+                        
+                        <!-- Date Filter Toolbar -->
+                        <div class="caja-toolbar">
+                            <div class="toolbar-left">
+                                <h3 class="toolbar-title">📊 Panel Financiero</h3>
+                                <div class="date-presets">
+                                    <button class="preset-btn active" data-preset="all">Todo</button>
+                                    <button class="preset-btn" data-preset="today">Hoy</button>
+                                    <button class="preset-btn" data-preset="week">Esta Semana</button>
+                                    <button class="preset-btn" data-preset="month">Este Mes</button>
+                                    <button class="preset-btn" data-preset="custom">Personalizado</button>
+                                </div>
+                            </div>
+                            <div class="toolbar-right">
+                                <div class="date-range-inputs" id="date-range-inputs" style="display:none;">
+                                    <label>Desde:</label>
+                                    <input type="date" id="filter-date-from">
+                                    <label>Hasta:</label>
+                                    <input type="date" id="filter-date-to">
+                                    <button class="btn btn-primary btn-sm" id="btn-apply-dates">Aplicar</button>
+                                </div>
+                                <button class="btn btn-pdf" id="btn-generate-pdf">
+                                    📄 Generar Reporte PDF
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Metrics Cards (6 cards) -->
+                        <div class="caja-metrics caja-metrics-6">
+                            <div class="metric-card balance-card">
+                                <div class="card-glow"></div>
+                                <span class="metric-icon">💰</span>
+                                <span class="metric-label">Saldo en Caja</span>
+                                <span class="metric-val" id="caja-balance">$0.00</span>
+                                <span class="metric-sub">Entradas - Salidas</span>
+                            </div>
+                            <div class="metric-card income-card">
+                                <span class="metric-icon">📈</span>
+                                <span class="metric-label">Total Ingresos</span>
+                                <span class="metric-val text-success" id="caja-incomes">$0.00</span>
+                                <span class="metric-sub" id="caja-incomes-count">0 transacciones</span>
+                            </div>
+                            <div class="metric-card outcome-card">
+                                <span class="metric-icon">📉</span>
+                                <span class="metric-label">Total Egresos</span>
+                                <span class="metric-val text-danger" id="caja-outcomes">$0.00</span>
+                                <span class="metric-sub" id="caja-outcomes-count">0 transacciones</span>
+                            </div>
+                            <div class="metric-card sales-card">
+                                <span class="metric-icon">🧾</span>
+                                <span class="metric-label">Ventas Comandas</span>
+                                <span class="metric-val text-cyan" id="caja-sales">$0.00</span>
+                                <span class="metric-sub" id="caja-sales-count">0 finalizadas</span>
+                            </div>
+                            <div class="metric-card avg-card">
+                                <span class="metric-icon">🎯</span>
+                                <span class="metric-label">Ticket Promedio</span>
+                                <span class="metric-val" id="caja-avg-ticket">$0.00</span>
+                                <span class="metric-sub">Por comanda cobrada</span>
+                            </div>
+                            <div class="metric-card cancelled-card">
+                                <span class="metric-icon">🚫</span>
+                                <span class="metric-label">Canceladas</span>
+                                <span class="metric-val text-muted-light" id="caja-cancelled">0</span>
+                                <span class="metric-sub">Comandas sin cobrar</span>
+                            </div>
+                        </div>
+
+                        <!-- Charts Row -->
+                        <div class="charts-row">
+                            <div class="card chart-card chart-cashflow">
+                                <div class="card-header-flex">
+                                    <div>
+                                        <h3>Flujo de Caja Diario</h3>
+                                        <span class="card-subtitle">Ingresos vs Egresos por día</span>
+                                    </div>
+                                </div>
+                                <div class="chart-container">
+                                    <canvas id="cashflow-chart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <div class="card chart-card chart-categories">
+                                <div class="card-header-flex">
+                                    <div>
+                                        <h3>Distribución por Categoría</h3>
+                                        <span class="card-subtitle">Desglose de egresos</span>
+                                    </div>
+                                </div>
+                                <div class="chart-container">
+                                    <canvas id="category-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Top Products + Transaction Form -->
+                        <div class="caja-details-grid">
+                            <div class="caja-main-panel">
+                                
+                                <!-- Top Selling Products -->
+                                <div class="card top-products-card">
+                                    <div class="card-header-flex">
+                                        <div>
+                                            <h3>🏆 Productos Más Vendidos</h3>
+                                            <span class="card-subtitle">Ranking por cantidad vendida</span>
+                                        </div>
+                                    </div>
+                                    <div class="top-products-list" id="top-products-list">
+                                        <div class="empty-ledger-message">
+                                            <p>Sin datos de ventas disponibles.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Ledger Table -->
+                                <div class="card ledger-card">
+                                    <div class="card-header-flex">
+                                        <div>
+                                            <h3>Historial de Movimientos</h3>
+                                            <span class="card-subtitle" id="ledger-count-label">Mostrando todas las transacciones</span>
+                                        </div>
+                                        <div class="ledger-filters">
+                                            <select id="filter-tx-type" class="filter-select">
+                                                <option value="all">Todos los tipos</option>
+                                                <option value="income">Solo Ingresos</option>
+                                                <option value="outcome">Solo Egresos</option>
+                                            </select>
+                                            <input type="text" id="search-ledger" placeholder="Buscar...">
+                                        </div>
+                                    </div>
+                                    <div class="ledger-table-container">
+                                        <table class="ledger-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Fecha y Hora</th>
+                                                    <th>Tipo</th>
+                                                    <th>Concepto</th>
+                                                    <th>Categoría</th>
+                                                    <th>Orden</th>
+                                                    <th style="text-align: right;">Monto</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="ledger-rows">
+                                                <!-- Cargado por JS -->
+                                            </tbody>
+                                        </table>
+                                        <div class="empty-ledger-message" id="empty-ledger-msg" style="display:none;">
+                                            <p>No hay transacciones en el período seleccionado.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right: Create Manual Entry -->
+                            <div class="caja-side-panel">
+                                <div class="card form-card">
+                                    <h3>💸 Registrar Movimiento</h3>
+                                    <p class="form-desc">Registra entradas (apertura de caja, ventas manuales) o salidas de efectivo (compras de insumos, servicios, nóminas).</p>
+                                    
+                                    <form id="form-transaction" class="caja-form">
+                                        <div class="form-group-caja">
+                                            <label>Tipo de Movimiento</label>
+                                            <div class="type-selector">
+                                                <label class="type-btn type-income">
+                                                    <input type="radio" name="tx-type" value="income" checked>
+                                                    <span>📈 Ingreso</span>
+                                                </label>
+                                                <label class="type-btn type-outcome">
+                                                    <input type="radio" name="tx-type" value="outcome">
+                                                    <span>📉 Egreso</span>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group-caja">
+                                            <label for="tx-amount">Monto ($)</label>
+                                            <input type="number" id="tx-amount" placeholder="0.00" min="0.01" step="0.01" required>
+                                        </div>
+
+                                        <div class="form-group-caja">
+                                            <label for="tx-category">Categoría</label>
+                                            <select id="tx-category" required>
+                                                <option value="caja_inicial">🔑 Apertura de Caja</option>
+                                                <option value="venta">💰 Venta Manual</option>
+                                                <option value="insumos">🛒 Insumos y Mercadería</option>
+                                                <option value="servicios">💡 Servicios Públicos</option>
+                                                <option value="personal">🧑‍🍳 Salarios / Personal</option>
+                                                <option value="otros" selected>⚙️ Otros Conceptos</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="form-group-caja">
+                                            <label for="tx-description">Concepto / Descripción</label>
+                                            <input type="text" id="tx-description" placeholder="Ej: Compra de carne, pago de gas..." required>
+                                        </div>
+
+                                        <button type="submit" class="btn btn-primary" id="btn-save-tx">
+                                            💾 Guardar Transacción
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- VIEW 4: MENU EDITOR -->
+                <section id="view-menu" class="app-view">
+                    <div class="menu-editor-layout">
+                        <div class="card menu-card-list">
+                            <div class="card-header-flex">
+                                <div class="header-left">
+                                    <h3>Catálogo de Productos</h3>
+                                    <p class="card-subtitle">Administra los precios e información de la carta.</p>
+                                </div>
+                                <button class="btn btn-success" id="btn-new-product">
+                                    ➕ Nuevo Producto
+                                </button>
+                            </div>
+                            
+                            <div class="menu-table-container">
+                                <table class="menu-table">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Categoría</th>
+                                            <th>Nombre</th>
+                                            <th>Descripción</th>
+                                            <th>Precio</th>
+                                            <th style="text-align: center;">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="menu-rows">
+                                        <!-- Cargado por JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- VIEW 5: CONFIGURATION -->
+                <section id="view-config" class="app-view">
+                    <div class="config-layout">
+                        <div class="card config-card">
+                            <h3>Estado de Dispositivos POS</h3>
+                            <p class="config-desc">Configuración y prueba de puertos de comunicación.</p>
+                            
+                            <div class="devices-list">
+                                <div class="device-item">
+                                    <div class="device-info">
+                                        <span class="device-icon">🍳</span>
+                                        <div>
+                                            <h4>Impresora de Cocina</h4>
+                                            <p class="device-port">Puerto: <code>/dev/usb/lp0</code></p>
+                                        </div>
+                                    </div>
+                                    <div class="device-actions">
+                                        <button class="btn btn-secondary btn-test-printer" data-target="cocina">Probar Cocina</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="device-item">
+                                    <div class="device-info">
+                                        <span class="device-icon">🍹</span>
+                                        <div>
+                                            <h4>Impresora de Barra</h4>
+                                            <p class="device-port">Puerto: <code>/dev/usb/lp1</code></p>
+                                        </div>
+                                    </div>
+                                    <div class="device-actions">
+                                        <button class="btn btn-secondary btn-test-printer" data-target="barra">Probar Barra</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card danger-zone-card">
+                            <h3 class="danger-title">Zona de Peligro</h3>
+                            <p class="danger-desc">Estas acciones modifican permanentemente los datos almacenados en el sistema.</p>
+                            
+                            <div class="danger-actions">
+                                <div class="danger-action-item">
+                                    <div>
+                                        <h4>Restablecer Base de Datos</h4>
+                                        <p>Borra todas las comandas, historial de transacciones y restablece los productos por defecto de KOMA.</p>
+                                    </div>
+                                    <button class="btn btn-danger" id="btn-reset-db">Resetear Base de Datos</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- PRODUCT MODAL (Add/Edit) -->
+    <div id="product-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="product-modal-title">Agregar Producto</h3>
+                <button class="modal-close-btn" id="btn-close-product-modal">✕</button>
+            </div>
+            <form id="form-product" class="modal-form">
+                <input type="hidden" id="prod-id">
+                
+                <div class="form-group-modal">
+                    <label for="prod-name">Nombre del Producto</label>
+                    <input type="text" id="prod-name" placeholder="Ej: Hamburguesa Koma Especial" required>
+                </div>
+                
+                <div class="form-group-modal-row">
+                    <div class="form-group-modal">
+                        <label for="prod-category">Categoría</label>
+                        <select id="prod-category" required>
                             <option value="food">🍔 Comida</option>
                             <option value="drink">🍹 Bebida</option>
                             <option value="dessert">🍰 Postre</option>
                         </select>
-                        <button class="btn-add-custom" id="btn-add-custom">Agregar</button>
                     </div>
-                </div>
-                <div class="menu-grid" id="menu-grid">
-                    <!-- Dinámicamente llenado por JS -->
-                </div>
-            </section>
-
-            <!-- MIDDLE PANEL: ACTIVE TICKET -->
-            <section class="panel panel-ticket">
-                <div class="panel-header">
-                    <h2>Comanda Activa</h2>
-                    <span class="order-id" id="display-order-id">Orden #--</span>
-                </div>
-
-                <div class="ticket-meta-grid">
-                    <div class="form-group">
-                        <label for="order-table">Mesa</label>
-                        <select id="order-table">
-                            <option value="Mesa 1">Mesa 1</option>
-                            <option value="Mesa 2">Mesa 2</option>
-                            <option value="Mesa 3">Mesa 3</option>
-                            <option value="Mesa 4">Mesa 4</option>
-                            <option value="Mesa 5">Mesa 5</option>
-                            <option value="Mesa Barra">Barra</option>
-                            <option value="Para Llevar">Llevar</option>
-                        </select>
+                    <div class="form-group-modal">
+                        <label for="prod-price">Precio ($)</label>
+                        <input type="number" id="prod-price" placeholder="0.00" min="0" step="0.01" required>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="order-diners">Personas</label>
-                        <input type="number" id="order-diners" value="1" min="1" max="20">
-                    </div>
-                </div>
-
-                <div class="ticket-items" id="ticket-items">
-                    <div class="empty-ticket-message">
-                        <span>📝</span>
-                        <p>Agrega productos del menú para comenzar la comanda.</p>
-                    </div>
-                </div>
-
-                <div class="ticket-notes">
-                    <label for="order-notes">Notas Generales de la Comanda</label>
-                    <textarea id="order-notes" placeholder="Ej: Sin sal, salsas aparte, servir bebidas primero..."></textarea>
-                </div>
-
-                <div class="ticket-footer">
-                    <div class="print-destination">
-                        <span class="dest-title">Impresora Destino</span>
-                        <div class="destination-options">
-                            <label class="dest-radio">
-                                <input type="radio" name="print-target" value="auto" checked>
-                                <span class="radio-card">
-                                    <span class="icon">🔀</span>
-                                    <span class="label">Auto-Split</span>
-                                    <span class="subtext">Comida a Cocina, Bebidas a Barra</span>
-                                </span>
-                            </label>
-                            
-                            <label class="dest-radio">
-                                <input type="radio" name="print-target" value="cocina">
-                                <span class="radio-card">
-                                    <span class="icon">🍳</span>
-                                    <span class="label">Cocina</span>
-                                    <span class="subtext">Todo a lp0</span>
-                                </span>
-                            </label>
-                            
-                            <label class="dest-radio">
-                                <input type="radio" name="print-target" value="barra">
-                                <span class="radio-card">
-                                    <span class="icon">🍸</span>
-                                    <span class="label">Barra</span>
-                                    <span class="subtext">Todo a lp1</span>
-                                </span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="ticket-actions">
-                        <button class="btn btn-clear" id="btn-clear">Limpiar</button>
-                        <button class="btn btn-print" id="btn-print">
-                            <span class="btn-icon">🖨️</span>
-                            <span class="btn-text">Imprimir Comanda</span>
-                        </button>
-                    </div>
-                    
-                    <button class="btn-browser-print" id="btn-browser-print">
-                        📄 Previsualizar / Imprimir en Navegador
-                    </button>
-                </div>
-            </section>
-
-            <!-- RIGHT PANEL: HISTORY & UTILITIES -->
-            <section class="panel panel-history">
-                <div class="panel-header">
-                    <h2>Historial & Utilidades</h2>
                 </div>
                 
-                <div class="history-list" id="history-list">
-                    <div class="empty-history-message">
-                        <p>No se han enviado comandas en esta sesión.</p>
-                    </div>
+                <div class="form-group-modal">
+                    <label for="prod-description">Descripción</label>
+                    <textarea id="prod-description" placeholder="Ingredientes o detalles del plato..."></textarea>
                 </div>
-
-                <div class="utilities-card">
-                    <h3>Acciones Rápidas</h3>
-                    <div class="util-buttons">
-                        <button class="btn btn-secondary" id="btn-test-kitchen">Test Cocina (lp0)</button>
-                        <button class="btn btn-secondary" id="btn-test-bar">Test Barra (lp1)</button>
-                    </div>
-                    <p class="util-note">Envía un ticket corto de prueba para comprobar que los rodillos y el cortador funcionan.</p>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-product-modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Producto</button>
                 </div>
-            </section>
-        </main>
+            </form>
+        </div>
     </div>
 
-    <!-- Modales o Notificaciones -->
+    <!-- TOAST CONTAINER -->
     <div id="toast-container"></div>
 
-    <!-- TICKET DE IMPRESIÓN DEL NAVEGADOR (Invisible en pantalla normal, visible al imprimir en navegador) -->
+    <!-- TICKET DE IMPRESIÓN DEL NAVEGADOR -->
     <div id="browser-print-ticket" class="print-only">
-        <!-- Generado dinámicamente -->
+        <!-- Generado dinámicamente al previsualizar comanda o reimprimir comanda cobrada -->
     </div>
 
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>
