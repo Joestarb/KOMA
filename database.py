@@ -128,18 +128,26 @@ def delete_product(prod_id):
     conn.close()
     return True
 
-def get_orders(status_filter=None):
+def get_orders(status_filter=None, date_from=None, date_to=None):
     conn = get_db_connection()
+    sql = "SELECT * FROM orders WHERE 1=1"
+    params = []
+    
     if status_filter == 'active':
-        orders = conn.execute(
-            "SELECT * FROM orders WHERE status IN ('pending', 'served') ORDER BY id DESC"
-        ).fetchall()
+        sql += " AND status IN ('pending', 'served')"
     elif status_filter in ['pending', 'served', 'completed', 'cancelled']:
-        orders = conn.execute(
-            "SELECT * FROM orders WHERE status = ? ORDER BY id DESC", (status_filter,)
-        ).fetchall()
-    else:
-        orders = conn.execute("SELECT * FROM orders ORDER BY id DESC").fetchall()
+        sql += " AND status = ?"
+        params.append(status_filter)
+        
+    if date_from:
+        sql += " AND DATE(created_at) >= ?"
+        params.append(date_from)
+    if date_to:
+        sql += " AND DATE(created_at) <= ?"
+        params.append(date_to)
+        
+    sql += " ORDER BY id DESC"
+    orders = conn.execute(sql, params).fetchall()
         
     result = []
     for order in orders:
@@ -432,4 +440,23 @@ def reset_db():
     if os.path.exists(DB_NAME):
         os.remove(DB_NAME)
     db_init()
+    return True
+
+def update_transaction(tx_id, amount, description, category, tx_type):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE transactions SET amount = ?, description = ?, category = ?, type = ? WHERE id = ?",
+        (float(amount), description, category, tx_type, int(tx_id))
+    )
+    conn.commit()
+    conn.close()
+    return True
+
+def delete_transaction(tx_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM transactions WHERE id = ?", (int(tx_id),))
+    conn.commit()
+    conn.close()
     return True

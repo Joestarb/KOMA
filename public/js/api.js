@@ -10,8 +10,12 @@ export async function fetchProducts() {
     return res.json();
 }
 
-export async function fetchOrders(statusFilter = 'all') {
-    const res = await fetch(`/api/orders?status=${statusFilter}`);
+export async function fetchOrders(statusFilter = 'all', dateFrom = '', dateTo = '') {
+    let url = `/api/orders?status=${statusFilter}`;
+    if (dateFrom && dateTo) {
+        url += `&from=${dateFrom}&to=${dateTo}`;
+    }
+    const res = await fetch(url);
     if (!res.ok) throw new Error('Error al cargar comandas');
     return res.json();
 }
@@ -114,6 +118,32 @@ export async function resetDatabaseApi() {
     if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || 'No se pudo restablecer la base de datos');
+    }
+    return res.json();
+}
+
+export async function updateTransactionApi(txData) {
+    const res = await fetch('/api/transactions/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(txData)
+    });
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'No se pudo modificar la transacción');
+    }
+    return res.json();
+}
+
+export async function deleteTransactionApi(id) {
+    const res = await fetch('/api/transactions/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+    });
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'No se pudo eliminar la transacción');
     }
     return res.json();
 }

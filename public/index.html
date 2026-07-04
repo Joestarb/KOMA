@@ -4,20 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Koma // Terminal de Comandas POS</title>
-    <!-- Google Fonts: Outfit & Plus Jakarta Sans -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;700;800&display=swap" rel="stylesheet">
-    <!-- Chart.js from CDN for financial charts -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Local Fonts -->
+    <link rel="stylesheet" href="fonts.css">
+    <!-- Chart.js for financial charts -->
+    <script src="js/chart.js"></script>
     <!-- jsPDF for PDF report generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="js/jspdf.umd.min.js"></script>
     <script>
         if (window.jspdf) {
             window.jsPDF = window.jspdf.jsPDF;
         }
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+    <script src="js/jspdf.plugin.autotable.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -27,7 +25,7 @@
             <div class="brand">
                 <span class="brand-icon">⚡</span>
                 <div class="brand-text">
-                    <h2>INSERTAR NOMBRE</h2>
+                    <h2>KOMA</h2>
                     <span class="brand-sub">SISTEMA POS</span>
                 </div>
             </div>
@@ -371,6 +369,7 @@
                                                 <option value="all">Todos los tipos</option>
                                                 <option value="income">Solo Ingresos</option>
                                                 <option value="outcome">Solo Egresos</option>
+                                                <option value="cancelled">Solo Canceladas</option>
                                             </select>
                                             <input type="text" id="search-ledger" placeholder="Buscar...">
                                         </div>
@@ -385,6 +384,7 @@
                                                     <th>Categoría</th>
                                                     <th>Orden</th>
                                                     <th style="text-align: right;">Monto</th>
+                                                    <th style="width: 80px; text-align: center;">Acciones</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="ledger-rows">
@@ -581,6 +581,55 @@
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" id="btn-cancel-product-modal">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Guardar Producto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TRANSACTION MODAL (Edit) -->
+    <div id="transaction-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="transaction-modal-title">Editar Movimiento</h3>
+                <button class="modal-close-btn" id="btn-close-transaction-modal">✕</button>
+            </div>
+            <form id="form-edit-transaction" class="modal-form">
+                <input type="hidden" id="edit-tx-id">
+                
+                <div class="form-group-modal">
+                    <label>Tipo de Movimiento</label>
+                    <select id="edit-tx-type" required>
+                        <option value="income">📈 Ingreso</option>
+                        <option value="outcome">📉 Egreso</option>
+                    </select>
+                </div>
+                
+                <div class="form-group-modal-row">
+                    <div class="form-group-modal">
+                        <label for="edit-tx-category">Categoría</label>
+                        <select id="edit-tx-category" required>
+                            <option value="caja_inicial">🔑 Apertura de Caja</option>
+                            <option value="venta">💰 Venta Manual</option>
+                            <option value="insumos">🛒 Insumos y Mercadería</option>
+                            <option value="servicios">💡 Servicios Públicos</option>
+                            <option value="personal">🧑‍🍳 Salarios / Personal</option>
+                            <option value="otros">⚙️ Otros Conceptos</option>
+                        </select>
+                    </div>
+                    <div class="form-group-modal">
+                        <label for="edit-tx-amount">Monto ($)</label>
+                        <input type="number" id="edit-tx-amount" min="0.01" step="0.01" required>
+                    </div>
+                </div>
+                
+                <div class="form-group-modal">
+                    <label for="edit-tx-description">Concepto / Descripción</label>
+                    <input type="text" id="edit-tx-description" required>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-transaction-modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
                 </div>
             </form>
         </div>

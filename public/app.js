@@ -3,7 +3,7 @@ import { showToast } from './js/utils.js';
 import { fetchStatus, resetDatabaseApi } from './js/api.js';
 import { refreshPOSData, renderMenu, clearActiveTicket, submitActiveOrder, previewOrderInBrowser } from './js/pos.js';
 import { loadBoardData, updateActiveOrdersCount } from './js/board.js';
-import { loadCajaData, renderLedger, updateTransactionCategories, submitTransaction, handlePresetChange, applyCustomDates } from './js/finance.js';
+import { loadCajaData, renderLedger, updateTransactionCategories, submitTransaction, handlePresetChange, applyCustomDates, closeTransactionModal, submitEditTransaction } from './js/finance.js';
 import { loadMenuEditorData, closeProductModal, submitProductForm } from './js/menu.js';
 import { generatePDFReport } from './js/reports.js';
 
@@ -27,6 +27,9 @@ const btnCancelProductModal = document.getElementById('btn-cancel-product-modal'
 const btnCloseProductModal = document.getElementById('btn-close-product-modal');
 const formProduct = document.getElementById('form-product');
 const btnResetDb = document.getElementById('btn-reset-db');
+const btnCancelTxModal = document.getElementById('btn-cancel-transaction-modal');
+const btnCloseTxModal = document.getElementById('btn-close-transaction-modal');
+const formEditTx = document.getElementById('form-edit-transaction');
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
@@ -181,6 +184,17 @@ function setupEventListeners() {
     }
     if (formProduct) {
         formProduct.addEventListener('submit', submitProductForm);
+    }
+    
+    // Transaction modals
+    if (btnCancelTxModal) {
+        btnCancelTxModal.addEventListener('click', closeTransactionModal);
+    }
+    if (btnCloseTxModal) {
+        btnCloseTxModal.addEventListener('click', closeTransactionModal);
+    }
+    if (formEditTx) {
+        formEditTx.addEventListener('submit', submitEditTransaction);
     }
     
     // Hardware printer tests

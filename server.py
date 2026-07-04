@@ -45,7 +45,9 @@ class KomaHandler(http.server.SimpleHTTPRequestHandler):
         elif path == '/api/orders':
             try:
                 status_filter = query.get('status', ['all'])[0]
-                orders = database.get_orders(status_filter)
+                date_from = query.get('from', [None])[0]
+                date_to = query.get('to', [None])[0]
+                orders = database.get_orders(status_filter, date_from, date_to)
                 self.send_json_response(orders)
             except Exception as e:
                 self.send_error_response(f"Error al obtener comandas: {str(e)}")
@@ -217,6 +219,38 @@ class KomaHandler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 self.send_error_response(f"Error al registrar movimiento: {str(e)}")
                 
+        elif path == '/api/transactions/update':
+            try:
+                body = json.loads(post_data.decode('utf-8'))
+                tx_id = body.get('id')
+                amount = float(body.get('amount', 0))
+                description = body.get('description', '')
+                category = body.get('category', 'otros')
+                t_type = body.get('type')
+                
+                if not tx_id or amount <= 0 or not description or t_type not in ['income', 'outcome']:
+                    self.send_error_response("Datos de transacción inválidos")
+                    return
+                    
+                database.update_transaction(tx_id, amount, description, category, t_type)
+                self.send_json_response({"success": True, "message": "Transacción modificada correctamente"})
+            except Exception as e:
+                self.send_error_response(f"Error al modificar transacción: {str(e)}")
+                
+        elif path == '/api/transactions/delete':
+            try:
+                body = json.loads(post_data.decode('utf-8'))
+                tx_id = body.get('id')
+                
+                if not tx_id:
+                    self.send_error_response("Falta ID de transacción")
+                    return
+                    
+                database.delete_transaction(tx_id)
+                self.send_json_response({"success": True, "message": "Transacción eliminada correctamente"})
+            except Exception as e:
+                self.send_error_response(f"Error al eliminar transacción: {str(e)}")
+
         elif path == '/api/config/reset':
             try:
                 database.reset_db()

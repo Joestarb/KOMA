@@ -1,6 +1,6 @@
 import { state } from './state.js';
 import { showToast } from './utils.js';
-import { fetchStats, fetchTransactions, submitTransactionApi } from './api.js';
+import { fetchStats, fetchTransactions, fetchOrders, submitTransactionApi, updateTransactionApi, deleteTransactionApi } from './api.js';
 import { generatePDFReport } from './reports.js';
 
 // DOM Elements
@@ -28,13 +28,11 @@ const filterDateToInput = document.getElementById('filter-date-to');
 const btnApplyDates = document.getElementById('btn-apply-dates');
 const btnGeneratePdf = document.getElementById('btn-generate-pdf');
 
+// Edit Transaction Modal
+const transactionModal = document.getElementById('transaction-modal');
+
 export async function loadCajaData() {
     try {
-        let urlParams = '';
-        if (state.filterDateFrom && state.filterDateTo) {
-            urlParams = `?from=${state.filterDateFrom}&to=${state.filterDateTo}`;
-        }
-        
         // 1. Estadísticas
         const stats = await fetchStats(state.filterDateFrom, state.filterDateTo);
         state.financeStats = stats;
@@ -61,9 +59,42 @@ export async function loadCajaData() {
             renderTopProducts(stats.top_products);
         }
         
-        // 2. Transacciones
+        // 2. Transacciones + Comandas Canceladas
         const txData = await fetchTransactions(state.filterDateFrom, state.filterDateTo);
-        state.transactions = txData;
+        const ordersData = await fetchOrders('all', state.filterDateFrom, state.filterDateTo);
+        const cancelledOrders = ordersData.filter(o => o.status === 'cancelled');
+        
+        // Mapear transacciones reales
+        const mappedTxs = txData.map(t => ({
+            id: t.id,
+            isCancelledOrder: false,
+            timestamp: t.timestamp,
+            type: t.type,
+            category: t.category,
+            description: t.description,
+            amount: t.amount,
+            order_id: t.order_id
+        }));
+        
+        // Mapear comandas canceladas
+        const mappedCancelled = cancelledOrders.map(o => {
+            const itemsSummary = o.items.map(i => `${i.name} (x${i.quantity})`).join(', ');
+            return {
+                id: o.id,
+                isCancelledOrder: true,
+                timestamp: o.updated_at || o.created_at,
+                type: 'cancelled',
+                category: 'otros',
+                description: `Comanda Cancelada - Mesa: ${o.table_name}. Platos: ${itemsSummary || 'Ninguno'}`,
+                amount: o.total,
+                order_id: o.id
+            };
+        });
+        
+        // Unificar y ordenar de más reciente a más antiguo
+        state.transactions = [...mappedTxs, ...mappedCancelled].sort((a, b) => {
+            return new Date(b.timestamp) - new Date(a.timestamp);
+        });
         
         const incCount = txData.filter(t => t.type === 'income').length;
         const outCount = txData.filter(t => t.type === 'outcome').length;
@@ -85,8 +116,12 @@ export function renderLedger() {
     const query = searchLedger ? searchLedger.value.trim().toLowerCase() : '';
     
     const filtered = state.transactions.filter(t => {
-        if (state.activeTxTypeFilter !== 'all' && t.type !== state.activeTxTypeFilter) {
-            return false;
+        if (state.activeTxTypeFilter !== 'all') {
+            if (state.activeTxTypeFilter === 'cancelled') {
+                return t.isCancelledOrder === true;
+            } else {
+                return t.type === state.activeTxTypeFilter && !t.isCancelledOrder;
+            }
         }
         return t.description.toLowerCase().includes(query) || 
                t.category.toLowerCase().includes(query) || 
@@ -94,7 +129,7 @@ export function renderLedger() {
     });
 
     if (ledgerCountLabel) {
-        ledgerCountLabel.textContent = `Mostrando ${filtered.length} de ${state.transactions.length} transacciones`;
+        ledgerCountLabel.textContent = `Mostrando ${filtered.length} de ${state.transactions.length} movimientos`;
     }
 
     if (filtered.length === 0) {
@@ -109,24 +144,50 @@ export function renderLedger() {
         const date = new Date(tx.timestamp);
         const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
-        const sign = tx.type === 'income' ? '+' : '-';
-        const classAmount = tx.type === 'income' ? 'tx-amount-col tx-income' : 'tx-amount-col tx-outcome';
-        const typeBadge = tx.type === 'income' ? 
-            `<span class="tx-type-badge tx-type-income">📈 Ingreso</span>` : 
-            `<span class="tx-type-badge tx-type-outcome">📉 Egreso</span>`;
-            
-        const orderLink = tx.order_id ? 
-            `<span class="tx-order-link">Mesa/Comanda #${tx.order_id}</span>` : 
-            `<span style="color: var(--color-text-muted); font-size: 11px;">Manual</span>`;
+        let typeBadge, sign, classAmount, orderLink, actions;
         
-        row.innerHTML = `
-            <td style="color: var(--color-text-muted); font-size: 12px;">${dateStr}</td>
-            <td>${typeBadge}</td>
-            <td><strong>${tx.description}</strong></td>
-            <td><span class="ledger-category-badge badge-${tx.category}">${getCategoryLabel(tx.category)}</span></td>
-            <td>${orderLink}</td>
-            <td class="${classAmount}" style="text-align: right;">${sign}$${tx.amount.toFixed(2)}</td>
-        `;
+        if (tx.isCancelledOrder) {
+            typeBadge = `<span class="tx-type-badge" style="background: rgba(244, 63, 94, 0.08); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.15); width: 110px; justify-content: center;">🚫 Cancelada</span>`;
+            sign = '';
+            classAmount = 'tx-amount-col';
+            orderLink = `<span class="tx-order-link" style="background: rgba(244, 63, 94, 0.05); border-color: rgba(244, 63, 94, 0.15); color: #f43f5e;">Mesa #${tx.order_id}</span>`;
+            actions = `<span style="color: var(--color-text-muted); font-size: 11px; opacity: 0.6;">Solo lectura</span>`;
+            
+            row.innerHTML = `
+                <td style="color: var(--color-text-muted); font-size: 12px;">${dateStr}</td>
+                <td>${typeBadge}</td>
+                <td><strong style="color: var(--color-text-muted); font-weight: 500;">${tx.description}</strong></td>
+                <td><span class="ledger-category-badge badge-otros">${getCategoryLabel(tx.category)}</span></td>
+                <td>${orderLink}</td>
+                <td class="${classAmount}" style="text-align: right; color: var(--color-text-muted); text-decoration: line-through;">$${tx.amount.toFixed(2)}</td>
+                <td style="text-align: center;">${actions}</td>
+            `;
+        } else {
+            sign = tx.type === 'income' ? '+' : '-';
+            classAmount = tx.type === 'income' ? 'tx-amount-col tx-income' : 'tx-amount-col tx-outcome';
+            typeBadge = tx.type === 'income' ? 
+                `<span class="tx-type-badge tx-type-income">📈 Ingreso</span>` : 
+                `<span class="tx-type-badge tx-type-outcome">📉 Egreso</span>`;
+                
+            orderLink = tx.order_id ? 
+                `<span class="tx-order-link">Mesa/Comanda #${tx.order_id}</span>` : 
+                `<span style="color: var(--color-text-muted); font-size: 11px;">Manual</span>`;
+            
+            actions = `
+                <button class="action-btn action-edit" onclick="openTransactionModal(${tx.id})" title="Editar">✏️</button>
+                <button class="action-btn action-delete" onclick="deleteTransaction(${tx.id})" title="Eliminar">🗑️</button>
+            `;
+            
+            row.innerHTML = `
+                <td style="color: var(--color-text-muted); font-size: 12px;">${dateStr}</td>
+                <td>${typeBadge}</td>
+                <td><strong>${tx.description}</strong></td>
+                <td><span class="ledger-category-badge badge-${tx.category}">${getCategoryLabel(tx.category)}</span></td>
+                <td>${orderLink}</td>
+                <td class="${classAmount}" style="text-align: right;">${sign}$${tx.amount.toFixed(2)}</td>
+                <td style="text-align: center; white-space: nowrap;">${actions}</td>
+            `;
+        }
         
         ledgerRows.appendChild(row);
     });
@@ -449,3 +510,73 @@ export function applyCustomDates() {
 export function triggerPDFGeneration() {
     generatePDFReport();
 }
+
+// Edit/Delete Transactions Logic
+export function openTransactionModal(txId) {
+    if (!transactionModal) return;
+    const tx = state.transactions.find(t => t.id === txId);
+    if (!tx) return;
+    
+    const editIdInput = document.getElementById('edit-tx-id');
+    const editTypeSelect = document.getElementById('edit-tx-type');
+    const editCategorySelect = document.getElementById('edit-tx-category');
+    const editAmountInput = document.getElementById('edit-tx-amount');
+    const editDescInput = document.getElementById('edit-tx-description');
+    
+    if (editIdInput) editIdInput.value = tx.id;
+    if (editTypeSelect) editTypeSelect.value = tx.type;
+    if (editCategorySelect) editCategorySelect.value = tx.category;
+    if (editAmountInput) editAmountInput.value = tx.amount;
+    if (editDescInput) editDescInput.value = tx.description;
+    
+    transactionModal.classList.add('active');
+}
+
+export function closeTransactionModal() {
+    if (transactionModal) transactionModal.classList.remove('active');
+}
+
+export async function submitEditTransaction(e) {
+    e.preventDefault();
+    
+    const editIdInput = document.getElementById('edit-tx-id');
+    const editTypeSelect = document.getElementById('edit-tx-type');
+    const editCategorySelect = document.getElementById('edit-tx-category');
+    const editAmountInput = document.getElementById('edit-tx-amount');
+    const editDescInput = document.getElementById('edit-tx-description');
+    
+    const id = editIdInput ? editIdInput.value : '';
+    const type = editTypeSelect ? editTypeSelect.value : 'income';
+    const category = editCategorySelect ? editCategorySelect.value : 'otros';
+    const amount = editAmountInput ? (parseFloat(editAmountInput.value) || 0) : 0;
+    const description = editDescInput ? editDescInput.value.trim() : '';
+    
+    if (!id || amount <= 0 || !description) {
+        showToast('Error', 'Completa todos los campos con valores válidos.', 'error');
+        return;
+    }
+    
+    try {
+        await updateTransactionApi({ id, type, category, amount, description });
+        showToast('Guardado', 'Movimiento modificado correctamente.', 'success');
+        closeTransactionModal();
+        await loadCajaData();
+    } catch(err) {
+        showToast('Error', err.message || 'No se pudo guardar la transacción.', 'error');
+    }
+}
+
+// Bind handlers globally for dynamically generated rows
+window.openTransactionModal = openTransactionModal;
+
+window.deleteTransaction = async function(txId) {
+    if (!confirm('¿Estás seguro de que deseas eliminar este movimiento del historial?')) return;
+    
+    try {
+        await deleteTransactionApi(txId);
+        showToast('Eliminado', 'Movimiento eliminado del historial financiero.', 'success');
+        await loadCajaData();
+    } catch(err) {
+        showToast('Error', err.message || 'No se pudo eliminar el movimiento.', 'error');
+    }
+};

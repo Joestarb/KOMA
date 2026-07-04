@@ -611,6 +611,11 @@ body {
     transition: all 0.2s ease;
 }
 
+select option {
+    background-color: #0b0d15;
+    color: var(--color-text-main);
+}
+
 .form-group select:focus, .form-group input:focus {
     border-color: var(--color-primary);
     background: rgba(255, 255, 255, 0.05);
