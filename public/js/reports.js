@@ -4,12 +4,12 @@ import { fetchReports } from './api.js';
 
 function getCategoryLabel(cat) {
     const labels = {
-        venta: '💰 Venta',
-        insumos: '🛒 Insumos',
-        servicios: '💡 Servicios',
-        personal: '🧑‍🍳 Personal',
-        caja_inicial: '🔑 Apertura',
-        otros: '⚙️ Otros'
+        venta: 'Venta',
+        insumos: 'Insumos',
+        servicios: 'Servicios',
+        personal: 'Personal',
+        caja_inicial: 'Apertura',
+        otros: 'Otros'
     };
     return labels[cat] || cat;
 }
