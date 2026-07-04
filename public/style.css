@@ -2255,3 +2255,47 @@ select option {
         margin-top: 10px;
     }
 }
+
+/* Subpanels inside Menu view */
+.inner-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 6px;
+    border-radius: 12px;
+    border: 1px solid var(--border-glass);
+    max-width: fit-content;
+}
+
+.inner-tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    transition: all 0.2s ease;
+}
+
+.inner-tab-btn:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.inner-tab-btn.active {
+    color: white;
+    background: var(--color-primary);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+.subpanel {
+    display: none;
+}
+
+.subpanel.active {
+    display: block;
+}

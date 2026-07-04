@@ -147,3 +147,35 @@ export async function deleteTransactionApi(id) {
     }
     return res.json();
 }
+
+export async function fetchCategories() {
+    const res = await fetch('/api/categories');
+    if (!res.ok) throw new Error('Error al cargar categorías');
+    return res.json();
+}
+
+export async function saveCategoryApi(catData) {
+    const res = await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(catData)
+    });
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'No se pudo guardar la categoría');
+    }
+    return res.json();
+}
+
+export async function deleteCategoryApi(id) {
+    const res = await fetch('/api/categories/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+    });
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'No se pudo eliminar la categoría');
+    }
+    return res.json();
+}

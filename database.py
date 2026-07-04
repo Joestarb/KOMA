@@ -14,6 +14,29 @@ def db_init():
     conn = get_db_connection()
     cursor = conn.cursor()
     
+    # 0. Categories table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS categories (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            icon TEXT NOT NULL
+        )
+    ''')
+    
+    # Seed categories if table is empty
+    cursor.execute("SELECT COUNT(*) FROM categories")
+    if cursor.fetchone()[0] == 0:
+        seed_categories = [
+            ('food', 'Comida', '🍔'),
+            ('drink', 'Bebida', '🍹'),
+            ('dessert', 'Postre', '🍰'),
+            ('otros', 'Otros', '📦')
+        ]
+        cursor.executemany(
+            "INSERT INTO categories (id, name, icon) VALUES (?, ?, ?)",
+            seed_categories
+        )
+    
     # 1. Products table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS products (
@@ -457,6 +480,41 @@ def delete_transaction(tx_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM transactions WHERE id = ?", (int(tx_id),))
+    conn.commit()
+    conn.close()
+    return True
+
+def get_categories():
+    conn = get_db_connection()
+    categories = conn.execute("SELECT * FROM categories ORDER BY name").fetchall()
+    conn.close()
+    return [dict(c) for c in categories]
+
+def save_category(cat_id, name, icon):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    existing = cursor.execute("SELECT * FROM categories WHERE id = ?", (cat_id,)).fetchone()
+    if existing:
+        cursor.execute(
+            "UPDATE categories SET name = ?, icon = ? WHERE id = ?",
+            (name, icon, cat_id)
+        )
+    else:
+        cursor.execute(
+            "INSERT INTO categories (id, name, icon) VALUES (?, ?, ?)",
+            (cat_id, name, icon)
+        )
+    conn.commit()
+    conn.close()
+    return True
+
+def delete_category(cat_id):
+    if cat_id == 'otros':
+        return False
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE products SET category = 'otros' WHERE category = ?", (cat_id,))
+    cursor.execute("DELETE FROM categories WHERE id = ?", (cat_id,))
     conn.commit()
     conn.close()
     return True

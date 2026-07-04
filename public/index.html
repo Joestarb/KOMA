@@ -96,11 +96,8 @@
                                     <span class="search-icon">🔍</span>
                                     <input type="text" id="search-product" placeholder="Buscar producto en la carta...">
                                 </div>
-                                <div class="category-tabs">
+                                <div class="category-tabs" id="pos-category-tabs">
                                     <button class="tab-btn active" data-category="all">Todos</button>
-                                    <button class="tab-btn" data-category="food">🍔 Comida</button>
-                                    <button class="tab-btn" data-category="drink">🍹 Bebidas</button>
-                                    <button class="tab-btn" data-category="dessert">🍰 Postres</button>
                                 </div>
                             </div>
                             
@@ -453,34 +450,73 @@
 
                 <!-- VIEW 4: MENU EDITOR -->
                 <section id="view-menu" class="app-view">
+                    <div class="inner-tabs">
+                        <button class="inner-tab-btn active" data-subtab="products">✏️ Productos</button>
+                        <button class="inner-tab-btn" data-subtab="categories">🏷️ Categorías</button>
+                    </div>
+                    
                     <div class="menu-editor-layout">
-                        <div class="card menu-card-list">
-                            <div class="card-header-flex">
-                                <div class="header-left">
-                                    <h3>Catálogo de Productos</h3>
-                                    <p class="card-subtitle">Administra los precios e información de la carta.</p>
+                        <!-- Subpanel 1: Products -->
+                        <div id="subpanel-products" class="subpanel active">
+                            <div class="card menu-card-list">
+                                <div class="card-header-flex">
+                                    <div class="header-left">
+                                        <h3>Catálogo de Productos</h3>
+                                        <p class="card-subtitle">Administra los precios e información de la carta.</p>
+                                    </div>
+                                    <button class="btn btn-success" id="btn-new-product">
+                                        ➕ Nuevo Producto
+                                    </button>
                                 </div>
-                                <button class="btn btn-success" id="btn-new-product">
-                                    ➕ Nuevo Producto
-                                </button>
+                                
+                                <div class="menu-table-container">
+                                    <table class="menu-table">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Categoría</th>
+                                                <th>Nombre</th>
+                                                <th>Descripción</th>
+                                                <th>Precio</th>
+                                                <th style="text-align: center;">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="menu-rows">
+                                            <!-- Cargado por JS -->
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
-                            
-                            <div class="menu-table-container">
-                                <table class="menu-table">
-                                    <thead>
-                                        <tr>
-                                            <th>ID</th>
-                                            <th>Categoría</th>
-                                            <th>Nombre</th>
-                                            <th>Descripción</th>
-                                            <th>Precio</th>
-                                            <th style="text-align: center;">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="menu-rows">
-                                        <!-- Cargado por JS -->
-                                    </tbody>
-                                </table>
+                        </div>
+
+                        <!-- Subpanel 2: Categories -->
+                        <div id="subpanel-categories" class="subpanel">
+                            <div class="card menu-card-list">
+                                <div class="card-header-flex">
+                                    <div class="header-left">
+                                        <h3>Categorías de Venta</h3>
+                                        <p class="card-subtitle">Administra los tipos de productos y sus emojis asociados.</p>
+                                    </div>
+                                    <button class="btn btn-success" id="btn-new-category">
+                                        ➕ Nueva Categoría
+                                    </button>
+                                </div>
+                                
+                                <div class="menu-table-container">
+                                    <table class="menu-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Identificador (ID)</th>
+                                                <th style="text-align: center;">Icono</th>
+                                                <th>Nombre</th>
+                                                <th style="text-align: center;">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="categories-rows">
+                                            <!-- Cargado por JS -->
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -561,11 +597,7 @@
                 <div class="form-group-modal-row">
                     <div class="form-group-modal">
                         <label for="prod-category">Categoría</label>
-                        <select id="prod-category" required>
-                            <option value="food">🍔 Comida</option>
-                            <option value="drink">🍹 Bebida</option>
-                            <option value="dessert">🍰 Postre</option>
-                        </select>
+                        <select id="prod-category" required></select>
                     </div>
                     <div class="form-group-modal">
                         <label for="prod-price">Precio ($)</label>
@@ -581,6 +613,38 @@
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" id="btn-cancel-product-modal">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Guardar Producto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CATEGORY MODAL -->
+    <div id="category-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="category-modal-title">Agregar Categoría</h3>
+                <button class="modal-close-btn" id="btn-close-category-modal">✕</button>
+            </div>
+            <form id="form-category" class="modal-form">
+                <div class="form-group-modal">
+                    <label for="cat-name">Nombre de la Categoría</label>
+                    <input type="text" id="cat-name" placeholder="Ej: Snacks, Pizzas..." required>
+                </div>
+                
+                <div class="form-group-modal-row">
+                    <div class="form-group-modal" style="flex: 2;">
+                        <label for="cat-id">Identificador único (Slug)</label>
+                        <input type="text" id="cat-id" placeholder="Identificador (ej: postres)" required>
+                    </div>
+                    <div class="form-group-modal" style="flex: 1;">
+                        <label for="cat-icon">Icono / Emoji</label>
+                        <input type="text" id="cat-icon" placeholder="🍔" required>
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-category-modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Categoría</button>
                 </div>
             </form>
         </div>

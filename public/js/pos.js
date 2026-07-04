@@ -1,6 +1,6 @@
 import { state } from './state.js';
 import { showToast } from './utils.js';
-import { fetchProducts, fetchOrders, submitOrder } from './api.js';
+import { fetchProducts, fetchOrders, submitOrder, fetchCategories } from './api.js';
 
 // DOM Elements inside module scope
 const menuGrid = document.getElementById('menu-grid');
@@ -13,11 +13,17 @@ const ticketSubtotal = document.getElementById('ticket-subtotal');
 const ticketTotal = document.getElementById('ticket-total');
 const btnPrint = document.getElementById('btn-print');
 const searchProduct = document.getElementById('search-product');
+const posCategoryTabs = document.getElementById('pos-category-tabs');
 
 export async function refreshPOSData() {
     try {
+        const categories = await fetchCategories();
+        state.categories = categories;
+        
         const prodData = await fetchProducts();
         state.products = prodData;
+        
+        renderCategoryTabs();
         renderMenu();
         
         const allOrders = await fetchOrders();
@@ -70,11 +76,43 @@ export function renderMenu() {
     });
 }
 
+export function renderCategoryTabs() {
+    if (!posCategoryTabs) return;
+    posCategoryTabs.innerHTML = '';
+    
+    // Always add "Todos"
+    const allBtn = document.createElement('button');
+    allBtn.className = 'tab-btn';
+    if (state.currentCategory === 'all') allBtn.classList.add('active');
+    allBtn.setAttribute('data-category', 'all');
+    allBtn.textContent = 'Todos';
+    posCategoryTabs.appendChild(allBtn);
+    
+    state.categories.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = 'tab-btn';
+        if (state.currentCategory === cat.id) btn.classList.add('active');
+        btn.setAttribute('data-category', cat.id);
+        btn.textContent = `${cat.icon} ${cat.name}`;
+        posCategoryTabs.appendChild(btn);
+    });
+    
+    // Bind click handlers to newly created tabs
+    const tabBtns = posCategoryTabs.querySelectorAll('.tab-btn');
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            tabBtns.forEach(b => b.classList.remove('active'));
+            const target = e.currentTarget;
+            target.classList.add('active');
+            state.currentCategory = target.getAttribute('data-category');
+            renderMenu();
+        });
+    });
+}
+
 export function getCategoryName(cat) {
-    if (cat === 'food') return 'Comida';
-    if (cat === 'drink') return 'Bebida';
-    if (cat === 'dessert') return 'Postre';
-    return cat;
+    const found = state.categories.find(c => c.id === cat);
+    return found ? `${found.icon} ${found.name}` : cat;
 }
 
 export function addToTicket(product) {

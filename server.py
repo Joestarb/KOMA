@@ -42,6 +42,13 @@ class KomaHandler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 self.send_error_response(f"Error al obtener productos: {str(e)}")
                 
+        elif path == '/api/categories':
+            try:
+                categories = database.get_categories()
+                self.send_json_response(categories)
+            except Exception as e:
+                self.send_error_response(f"Error al obtener categorías: {str(e)}")
+                
         elif path == '/api/orders':
             try:
                 status_filter = query.get('status', ['all'])[0]
@@ -201,6 +208,37 @@ class KomaHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_json_response({"success": True, "message": "Producto dado de baja del menú"})
             except Exception as e:
                 self.send_error_response(f"Error al eliminar producto: {str(e)}")
+                
+        elif path == '/api/categories':
+            try:
+                body = json.loads(post_data.decode('utf-8'))
+                cat_id = body.get('id')
+                name = body.get('name')
+                icon = body.get('icon', '📦')
+                
+                if not cat_id or not name:
+                    self.send_error_response("Datos de categoría inválidos")
+                    return
+                    
+                database.save_category(cat_id, name, icon)
+                self.send_json_response({"success": True, "message": "Categoría guardada correctamente"})
+            except Exception as e:
+                self.send_error_response(f"Error al guardar categoría: {str(e)}")
+                
+        elif path == '/api/categories/delete':
+            try:
+                body = json.loads(post_data.decode('utf-8'))
+                cat_id = body.get('id')
+                if not cat_id:
+                    self.send_error_response("Falta ID de categoría")
+                    return
+                if cat_id == 'otros':
+                    self.send_error_response("No se puede eliminar la categoría fallback 'otros'")
+                    return
+                database.delete_category(cat_id)
+                self.send_json_response({"success": True, "message": "Categoría eliminada. Los productos fueron reasignados a 'Otros'"})
+            except Exception as e:
+                self.send_error_response(f"Error al eliminar categoría: {str(e)}")
                 
         elif path == '/api/transactions':
             try:

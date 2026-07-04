@@ -6,6 +6,7 @@ import { loadBoardData, updateActiveOrdersCount } from './js/board.js';
 import { loadCajaData, renderLedger, updateTransactionCategories, submitTransaction, handlePresetChange, applyCustomDates, closeTransactionModal, submitEditTransaction } from './js/finance.js';
 import { loadMenuEditorData, closeProductModal, submitProductForm } from './js/menu.js';
 import { generatePDFReport } from './js/reports.js';
+import { loadCategoriesData, closeCategoryModal, submitCategoryForm } from './js/categories.js';
 
 // DOM Elements
 const statusKitchen = document.getElementById('status-kitchen');
@@ -30,6 +31,10 @@ const btnResetDb = document.getElementById('btn-reset-db');
 const btnCancelTxModal = document.getElementById('btn-cancel-transaction-modal');
 const btnCloseTxModal = document.getElementById('btn-close-transaction-modal');
 const formEditTx = document.getElementById('form-edit-transaction');
+const btnNewCategory = document.getElementById('btn-new-category');
+const btnCancelCategoryModal = document.getElementById('btn-cancel-category-modal');
+const btnCloseCategoryModal = document.getElementById('btn-close-category-modal');
+const formCategory = document.getElementById('form-category');
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
@@ -92,6 +97,7 @@ function setupNavigation() {
                 await loadCajaData();
             } else if (tab === 'menu') {
                 await loadMenuEditorData();
+                await loadCategoriesData();
             }
         });
     });
@@ -197,6 +203,34 @@ function setupEventListeners() {
         formEditTx.addEventListener('submit', submitEditTransaction);
     }
     
+    // Category modals
+    if (btnNewCategory) {
+        btnNewCategory.addEventListener('click', () => window.openCategoryModal());
+    }
+    if (btnCancelCategoryModal) {
+        btnCancelCategoryModal.addEventListener('click', closeCategoryModal);
+    }
+    if (btnCloseCategoryModal) {
+        btnCloseCategoryModal.addEventListener('click', closeCategoryModal);
+    }
+    if (formCategory) {
+        formCategory.addEventListener('submit', submitCategoryForm);
+    }
+    
+    // Menu Inner tabs (Products vs Categories)
+    const innerTabBtns = document.querySelectorAll('.inner-tab-btn');
+    const subpanels = document.querySelectorAll('.subpanel');
+    innerTabBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            innerTabBtns.forEach(b => b.classList.remove('active'));
+            subpanels.forEach(p => p.classList.remove('active'));
+            e.currentTarget.classList.add('active');
+            const subtab = e.currentTarget.getAttribute('data-subtab');
+            const activePanel = document.getElementById(`subpanel-${subtab}`);
+            if (activePanel) activePanel.classList.add('active');
+        });
+    });
+
     // Hardware printer tests
     document.querySelectorAll('.btn-test-printer').forEach(btn => {
         btn.addEventListener('click', (e) => {

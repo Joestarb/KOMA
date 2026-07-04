@@ -2,6 +2,7 @@ import { state } from './state.js';
 import { showToast } from './utils.js';
 import { fetchProducts, saveProductApi, deleteProductApi } from './api.js';
 import { getCategoryName } from './pos.js';
+import { populateProductCategoryDropdown } from './categories.js';
 
 // DOM Elements
 const menuRows = document.getElementById('menu-rows');
@@ -52,6 +53,8 @@ export function renderMenuEditor() {
 
 export function openProductModal(productId = '') {
     if (!productModal) return;
+    populateProductCategoryDropdown();
+    
     const modalTitle = document.getElementById('product-modal-title');
     const form = document.getElementById('form-product');
     

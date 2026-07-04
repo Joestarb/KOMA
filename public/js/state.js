@@ -3,6 +3,7 @@ export const state = {
     nextOrderId: 101,
     currentCategory: 'all',
     products: [],
+    categories: [],
     orders: [],
     transactions: [],
     financeStats: {},
