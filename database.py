@@ -112,6 +112,16 @@ def db_init():
             seed_products
         )
         
+    # Auto-assign ID to any products that might have been saved without one
+    cursor.execute("SELECT rowid, name FROM products WHERE id IS NULL OR id = ''")
+    null_id_products = cursor.fetchall()
+    if null_id_products:
+        import uuid
+        for row in null_id_products:
+            rowid, name = row[0], row[1]
+            new_id = f"p_{uuid.uuid4().hex[:8]}"
+            cursor.execute("UPDATE products SET id = ? WHERE rowid = ?", (new_id, rowid))
+        
     conn.commit()
     conn.close()
 
@@ -122,25 +132,31 @@ def get_products():
     return [dict(p) for p in products]
 
 def save_product(prod_id, name, category, price, description):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # Check if product exists (active or inactive)
-    existing = cursor.execute("SELECT * FROM products WHERE id = ?", (prod_id,)).fetchone()
-    
-    if existing:
-        cursor.execute(
-            "UPDATE products SET name = ?, category = ?, price = ?, description = ?, is_active = 1 WHERE id = ?",
-            (name, category, float(price), description, prod_id)
-        )
-    else:
-        cursor.execute(
-            "INSERT INTO products (id, name, category, price, description, is_active) VALUES (?, ?, ?, ?, ?, 1)",
-            (prod_id, name, category, float(price), description)
-        )
+    if not prod_id:
+        import uuid
+        prod_id = f"p_{uuid.uuid4().hex[:8]}"
         
-    conn.commit()
-    conn.close()
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        
+        # Check if product exists (active or inactive)
+        existing = cursor.execute("SELECT * FROM products WHERE id = ?", (prod_id,)).fetchone()
+        
+        if existing:
+            cursor.execute(
+                "UPDATE products SET name = ?, category = ?, price = ?, description = ?, is_active = 1 WHERE id = ?",
+                (name, category, float(price), description, prod_id)
+            )
+        else:
+            cursor.execute(
+                "INSERT INTO products (id, name, category, price, description, is_active) VALUES (?, ?, ?, ?, ?, 1)",
+                (prod_id, name, category, float(price), description)
+            )
+            
+        conn.commit()
+    finally:
+        conn.close()
     return True
 
 def delete_product(prod_id):
@@ -188,23 +204,28 @@ def get_orders(status_filter=None, date_from=None, date_to=None):
 def create_order(table_name, diners, notes, items):
     total = sum(float(i.get('price', 0)) * int(i.get('quantity', 1)) for i in items)
     conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    now = datetime.now().isoformat()
-    cursor.execute(
-        "INSERT INTO orders (table_name, diners, notes, status, total, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (table_name, int(diners), notes, 'pending', total, now, now)
-    )
-    order_id = cursor.lastrowid
-    
-    for item in items:
-        cursor.execute(
-            "INSERT INTO order_items (order_id, product_id, name, category, price, quantity, notes) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (order_id, item.get('id', 'custom'), item.get('name'), item.get('category'), float(item.get('price', 0)), int(item.get('quantity', 1)), item.get('notes', ''))
-        )
+    try:
+        cursor = conn.cursor()
         
-    conn.commit()
-    conn.close()
+        now = datetime.now().isoformat()
+        cursor.execute(
+            "INSERT INTO orders (table_name, diners, notes, status, total, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (table_name, int(diners), notes, 'pending', total, now, now)
+        )
+        order_id = cursor.lastrowid
+        
+        for item in items:
+            item_id = item.get('id')
+            if not item_id:
+                item_id = 'custom'
+            cursor.execute(
+                "INSERT INTO order_items (order_id, product_id, name, category, price, quantity, notes) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (order_id, item_id, item.get('name'), item.get('category'), float(item.get('price', 0)), int(item.get('quantity', 1)), item.get('notes', ''))
+            )
+            
+        conn.commit()
+    finally:
+        conn.close()
     return order_id
 
 def update_order_status(order_id, new_status):
