@@ -21,7 +21,7 @@
 <body>
     <div class="app-container">
         <!-- Sidebar Navigation -->
-        <aside class="app-sidebar">
+        <aside class="app-sidebar" id="app-sidebar">
             <div class="brand">
                 <span class="brand-icon">⚡</span>
                 <div class="brand-text">
@@ -59,6 +59,10 @@
                     <span class="pulse-dot"></span>
                     <span>POS Server Activo</span>
                 </div>
+                <button class="btn-collapse-sidebar" id="btn-collapse-sidebar" title="Ocultar barra lateral">
+                    <span class="collapse-icon">◀</span>
+                    <span class="collapse-text">Ocultar menú</span>
+                </button>
             </div>
         </aside>
 
@@ -66,6 +70,11 @@
         <div class="app-content-wrapper">
             <!-- Top Header -->
             <header class="app-header">
+                <button class="btn-toggle-sidebar" id="btn-toggle-sidebar" title="Mostrar/ocultar menú lateral">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
                 <div class="header-title">
                     <h1 id="current-view-title">Nueva Comanda</h1>
                     <p id="current-view-desc">Crea y envía pedidos directamente a cocina o barra.</p>

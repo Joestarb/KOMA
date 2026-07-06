@@ -35,6 +35,9 @@ const btnNewCategory = document.getElementById('btn-new-category');
 const btnCancelCategoryModal = document.getElementById('btn-cancel-category-modal');
 const btnCloseCategoryModal = document.getElementById('btn-close-category-modal');
 const formCategory = document.getElementById('form-category');
+const appSidebar = document.getElementById('app-sidebar');
+const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+const btnCollapseSidebar = document.getElementById('btn-collapse-sidebar');
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
@@ -44,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function initApp() {
     setupNavigation();
     setupEventListeners();
+    setupSidebarToggle();
     
     // Initial load
     await refreshPOSData();
@@ -53,6 +57,28 @@ async function initApp() {
     checkPrintersStatus();
     setInterval(checkPrintersStatus, 5000);
     setInterval(updateActiveOrdersCount, 10000);
+}
+
+// Sidebar collapse/expand
+function setupSidebarToggle() {
+    const savedState = localStorage.getItem('koma-sidebar-collapsed');
+    if (savedState === 'true' && appSidebar) {
+        appSidebar.classList.add('collapsed');
+    }
+
+    if (btnToggleSidebar) {
+        btnToggleSidebar.addEventListener('click', toggleSidebar);
+    }
+    if (btnCollapseSidebar) {
+        btnCollapseSidebar.addEventListener('click', toggleSidebar);
+    }
+}
+
+function toggleSidebar() {
+    if (!appSidebar) return;
+    appSidebar.classList.toggle('collapsed');
+    const isCollapsed = appSidebar.classList.contains('collapsed');
+    localStorage.setItem('koma-sidebar-collapsed', isCollapsed);
 }
 
 // 1. SPA Navigation

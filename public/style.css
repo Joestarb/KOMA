@@ -89,6 +89,85 @@ body {
     gap: 32px;
     z-index: 10;
     flex-shrink: 0;
+    transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                padding 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.25s ease;
+    overflow: hidden;
+}
+
+.app-sidebar.collapsed {
+    width: 0;
+    padding: 0;
+    border-right: none;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Hamburger toggle button in header */
+.btn-toggle-sidebar {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-glass);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    flex-shrink: 0;
+    margin-right: 16px;
+}
+
+.btn-toggle-sidebar:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--color-cyan);
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.15);
+}
+
+.hamburger-line {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background: var(--color-text-muted);
+    border-radius: 2px;
+    transition: all 0.3s ease;
+}
+
+.btn-toggle-sidebar:hover .hamburger-line {
+    background: var(--color-cyan);
+}
+
+/* Sidebar collapse button */
+.btn-collapse-sidebar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-glass);
+    border-radius: 10px;
+    color: var(--color-text-muted);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.btn-collapse-sidebar:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: white;
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.collapse-icon {
+    font-size: 10px;
+    transition: transform 0.3s ease;
 }
 
 .brand {

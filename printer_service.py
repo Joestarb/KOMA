@@ -44,15 +44,34 @@ def _macos_printer_status(cups_name):
 
 
 def _macos_print(cups_name, buffer):
-    """Envía datos ESC/POS en crudo a una impresora CUPS en macOS."""
+    """Envía datos ESC/POS en crudo a una impresora CUPS en macOS.
+
+    Utiliza múltiples flags para asegurar que CUPS no aplique filtros
+    de conversión (como cgpdftops) sobre los datos binarios ESC/POS.
+    """
     result = subprocess.run(
-        ['lp', '-d', cups_name, '-o', 'raw', '-'],
+        [
+            'lp', '-d', cups_name,
+            '-o', 'raw',
+            '-o', 'document-format=application/octet-stream',
+            '-'
+        ],
         input=buffer,
         capture_output=True,
         timeout=10
     )
     if result.returncode != 0:
-        raise IOError(result.stderr.decode('utf-8', errors='replace').strip())
+        # Fallback: intentar mediante lpr que en algunos macOS respeta mejor raw
+        result_lpr = subprocess.run(
+            ['lpr', '-P', cups_name, '-o', 'raw', '-l'],
+            input=buffer,
+            capture_output=True,
+            timeout=10
+        )
+        if result_lpr.returncode != 0:
+            err_lp = result.stderr.decode('utf-8', errors='replace').strip()
+            err_lpr = result_lpr.stderr.decode('utf-8', errors='replace').strip()
+            raise IOError(f"lp error: {err_lp} | lpr error: {err_lpr}")
 
 
 # ---------------------------------------------------------------------------
